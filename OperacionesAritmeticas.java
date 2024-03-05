@@ -1,7 +1,8 @@
 import java.util.Stack;
 
-public class OperacionesAritmeticas  {
+public class OperacionesAritmeticas {
 
+    public String infixExpression;
 
     static int prec(char c) {
         if (c == '^')
@@ -14,14 +15,12 @@ public class OperacionesAritmeticas  {
             return -1;
     }
 
-    // Function to return associativity of operators
     static char associativity(char c) {
         if (c == '^')
             return 'R';
         return 'L'; // Default to left-associative
     }
 
-    // Implementación del método convertToPostfix de la interfaz Expression
     public String convertToPostfix(String s) {
         StringBuilder result = new StringBuilder();
         Stack<Character> stack = new Stack<>();
@@ -29,50 +28,53 @@ public class OperacionesAritmeticas  {
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
 
-            // If the scanned character is an operand, add it to the output string.
             if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
                 result.append(c);
-            }
-            // If the scanned character is an ‘(‘, push it to the stack.
-            else if (c == '(') {
+            } else if (c == '(') {
                 stack.push(c);
-            }
-            // If the scanned character is an ‘)’, pop and add to the output string from the stack
-            // until an ‘(‘ is encountered.
-            else if (c == ')') {
+            } else if (c == ')') {
                 while (!stack.isEmpty() && stack.peek() != '(') {
                     result.append(stack.pop());
                 }
-                stack.pop(); // Pop '('
-            }
-            // If an operator is scanned
-            else {
-                while (!stack.isEmpty() && (prec(s.charAt(i)) < prec(stack.peek()) ||
-                        prec(s.charAt(i)) == prec(stack.peek()) &&
-                                associativity(s.charAt(i)) == 'L')) {
+                if (!stack.isEmpty()) {
+                    stack.pop(); // Pop '('
+                } else {
+                    throw new IllegalArgumentException("Expresión incorrecta: paréntesis no balanceados");
+                }
+            } else {
+                while (!stack.isEmpty() && (prec(c) < prec(stack.peek()) ||
+                        prec(c) == prec(stack.peek()) &&
+                                associativity(c) == 'L')) {
                     result.append(stack.pop());
                 }
                 stack.push(c);
             }
         }
 
-        // Pop all the remaining elements from the stack
         while (!stack.isEmpty()) {
-            result.append(stack.pop());
+            char c = stack.pop();
+            if (c == '(' || c == ')') {
+                throw new IllegalArgumentException("Expresión incorrecta: paréntesis no balanceados");
+            }
+            result.append(c);
         }
 
         return result.toString();
     }
 
-    // Método para evaluar una expresión postfija
     public double evaluatePostfix(String postfixExpression) {
         Stack<Double> stack = new Stack<>();
 
         for (int i = 0; i < postfixExpression.length(); i++) {
             char c = postfixExpression.charAt(i);
             if (Character.isDigit(c)) {
-                stack.push((double) (c - '0'));
-            } else {
+                StringBuilder number = new StringBuilder();
+                while (i < postfixExpression.length() && Character.isDigit(postfixExpression.charAt(i))) {
+                    number.append(postfixExpression.charAt(i++));
+                }
+                i--; // Retroceder el índice en uno para compensar el avance adicional en el bucle while
+                stack.push(Double.parseDouble(number.toString()));
+            } else if (c == '+' || c == '-' || c == '*' || c == '/' || c == '^') {
                 double operand2 = stack.pop();
                 double operand1 = stack.pop();
                 double result;
@@ -100,5 +102,9 @@ public class OperacionesAritmeticas  {
         }
 
         return stack.pop();
+    }
+
+    public String getInfixExpression() {
+        return infixExpression;
     }
 }
